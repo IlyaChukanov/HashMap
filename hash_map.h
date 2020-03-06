@@ -1,203 +1,277 @@
+#pragma once
+
 // Copyright 2020 Ilya Chukanov
 
+#include <iostream>
 #include <algorithm>
 #include <cmath>
-#include <list>
-#include <map>
-#include <set>
 #include <vector>
-#include <utility>
+#include <list>
+#include <stdexcept>      
 
-#define BOOST_TEST_MODULE <yourtestName>
+using namespace std;
 
 template <class KeyType, class ValueType, class Hash = std::hash<KeyType>>
 class HashMap {
- private:
-    int quantityElements;
-
-    int amountNumbers = 0;
-
-    std::vector<std::list<
-        typename std::list<std::pair<const KeyType, ValueType>>::iterator>>
-        significantSaver;
-
-    std::list<std::pair<const KeyType, ValueType>> secondListSaving;
-
-    Hash functionHash;
-
  public:
     using const_iterator =
-        typename std::list<std::pair<const KeyType, ValueType>>::const_iterator;
-    using iterator =
-        typename std::list<std::pair<const KeyType, ValueType>>::iterator;
+        typename list<pair<const KeyType, ValueType>>::const_iterator;
+    using iterator = typename list<pair<const KeyType, ValueType>>::iterator;
 
-    int spesialChangeType = 20;
+    HashMap(Hash hasherObj = Hash());
 
-    HashMap(Hash hasherObj = Hash()) : functionHash(hasherObj) {
-        quantityElements = spesialChangeType;
-        significantSaver.resize(quantityElements);
-    }
+    HashMap(initializer_list<pair<KeyType, ValueType>> list,
+            Hash hasherObj = Hash());
 
-    HashMap(std::initializer_list<std::pair<KeyType, ValueType>> list,
-            Hash hasherObj = Hash())
-        : functionHash(hasherObj) {
-        quantityElements = spesialChangeType;
-        significantSaver.resize(quantityElements);
-        for (auto &pos_in_list : list) {
-            insert(pos_in_list);
-        }
-    }
+    template <typename IteratorType>
+    HashMap(IteratorType begin, IteratorType end, Hash hasherObj = Hash());
 
-    template <typename NewSpecialType>
-    HashMap(NewSpecialType begin, NewSpecialType end, Hash hasherObj = Hash())
-        : functionHash(hasherObj) {
-        quantityElements = spesialChangeType;
-        significantSaver.resize(quantityElements);
-        for (; begin != end; ++begin) {
-            insert(*begin);
-        }
-    }
+    Hash hash_function() const;
 
-    Hash hash_function() const {
-        auto ans = functionHash;
-        return ans;
-    }
-    bool empty() const { return !amountNumbers; }
+    bool empty() const;
 
-    void insert(std::pair<KeyType, ValueType> promoteElement) {
-        int qhashPar = functionHash(promoteElement.first) % quantityElements;
-        for (auto &autoIt : significantSaver[qhashPar]) {
-            KeyType def_prom = autoIt->first;
-            if (def_prom == promoteElement.first) {
-                return;
-            }
-        }
-        secondListSaving.push_back(promoteElement);
-        auto Myiterator = secondListSaving.end();
-        --Myiterator;
-        significantSaver[qhashPar].push_back(Myiterator);
+    void insert(pair<KeyType, ValueType> promoteElement);
 
-        ++amountNumbers;
+    iterator begin();
 
-        if (quantityElements > amountNumbers * 2) {
+    const_iterator end() const;
+
+    iterator end();
+
+    HashMap& operator=(HashMap const& element_position_in_object);
+
+    iterator find(KeyType sample_key_for_iterating);
+
+    void erase(KeyType eraseElem);
+
+    const_iterator begin() const;
+
+    size_t size() const;
+
+    ValueType& operator[](KeyType sample_key_for_iterating);
+
+    const ValueType& at(KeyType sample_key_for_iterating) const;
+
+    const_iterator find(KeyType sample_key_for_iterating) const;
+
+    void clear();
+
+ private:
+    const size_t initialTableSize_ = 20;
+
+    size_t hash_table_size_quantity_elements_;
+
+    size_t num_hash_table_elements_ = 0;
+
+    vector<list<typename list<pair<const KeyType, ValueType>>::iterator>>
+        hash_table_;
+
+    list<pair<const KeyType, ValueType>> all_elements_;
+
+    Hash function_hash_number_;
+};
+
+template <class KeyType, class ValueType, class Hash>
+void HashMap<KeyType, ValueType, Hash>::insert(
+    pair<KeyType, ValueType> promoteElement) {
+    size_t hash_table_cell_id = function_hash_number_(promoteElement.first) %
+                                hash_table_size_quantity_elements_;
+    for (auto& element : hash_table_[hash_table_cell_id]) {
+        KeyType def_prom = element->first;
+        if (def_prom == promoteElement.first) {
             return;
         }
-        std::list<std::pair<KeyType, ValueType>> paceType;
-        for (auto &myIter : secondListSaving) {
-            paceType.push_back(std::make_pair(myIter.first, myIter.second));
-        }
-        significantSaver.clear();
-        secondListSaving.clear();
-        quantityElements = quantityElements * 2;
-        significantSaver.resize(quantityElements);
-        amountNumbers = 0;
-        for (auto &system : paceType) {
-            insert(system);
-        }
-        paceType.clear();
     }
+    all_elements_.push_back(promoteElement);
+    auto Myiterator = all_elements_.end();
+    --Myiterator;
+    hash_table_[hash_table_cell_id].push_back(Myiterator);
 
-    iterator begin() {
-        auto ans = iterator(secondListSaving.begin());
-        return ans;
-    }
-    const_iterator end() const {
-        auto ans = secondListSaving.end();
-        return ans;
-    }
-    iterator end() {
-        auto ans = iterator(secondListSaving.end());
-        return ans;
-    }
+    ++num_hash_table_elements_;
 
-    HashMap &operator=(HashMap const &finderOne) {
-        auto finderOperator = this;
-        if (&finderOne == finderOperator) {
-            return *finderOperator;
-        }
-        for (auto &finderIter : secondListSaving) {
-            int hashFunction =
-                functionHash(finderIter.first) % quantityElements;
-            significantSaver[hashFunction].clear();
-        }
-        secondListSaving.clear();
-        amountNumbers = 0;
-        functionHash = finderOne.hash_function();
-        significantSaver.resize(finderOne.quantityElements);
-        for (auto &foundIter : finderOne) {
-            insert(foundIter);
-        }
-        return *finderOperator;
+    if (hash_table_size_quantity_elements_ > num_hash_table_elements_ * 2) {
+        return;
     }
-
-    iterator find(KeyType keyExample) {
-        int hashFunc = functionHash(keyExample) % quantityElements;
-        for (auto &MyPos : significantSaver[hashFunc]) {
-            KeyType def_prom = MyPos->first;
-            if (keyExample == def_prom) {
-                return iterator(MyPos);
-            }
-        }
-        return iterator(secondListSaving.end());
+    list<pair<KeyType, ValueType>> position_of_scale;
+    for (auto& Iterator_for_find_pos : all_elements_) {
+        position_of_scale.push_back(make_pair(Iterator_for_find_pos.first,
+                                              Iterator_for_find_pos.second));
     }
+    hash_table_.clear();
+    all_elements_.clear();
+    hash_table_size_quantity_elements_ = hash_table_size_quantity_elements_ * 2;
+    hash_table_.resize(hash_table_size_quantity_elements_);
+    num_hash_table_elements_ = 0;
+    for (auto& system : position_of_scale) {
+        insert(system);
+    }
+    position_of_scale.clear();
+}
 
-    void erase(KeyType eraseElem) {
-        int PolHash = functionHash(eraseElem) % quantityElements;
-        for (auto Myit = significantSaver[PolHash].begin();
-             Myit != significantSaver[PolHash].end(); ++Myit) {
-            KeyType def_prom = (*Myit)->first;
-            if (eraseElem == def_prom) {
-                secondListSaving.erase(*Myit);
-                significantSaver[PolHash].erase(Myit);
-                amountNumbers--;
-                return;
-            }
+template <class KeyType, class ValueType, class Hash>
+void HashMap<KeyType, ValueType, Hash>::clear() {
+    for (auto& finderIter : all_elements_) {
+        size_t hashFunction = function_hash_number_(finderIter.first) %
+                              hash_table_size_quantity_elements_;
+        hash_table_[hashFunction].clear();
+    }
+    all_elements_.clear();
+    num_hash_table_elements_ = 0;
+}
+
+template <class KeyType, class ValueType, class Hash>
+typename list<pair<const KeyType, ValueType>>::const_iterator
+HashMap<KeyType, ValueType, Hash>::find(
+    KeyType sample_key_for_iterating) const {
+    size_t hashFunc = function_hash_number_(sample_key_for_iterating) %
+                      hash_table_size_quantity_elements_;
+    for (auto& fonderInter : hash_table_[hashFunc]) {
+        KeyType def_prom = fonderInter->first;
+        if (sample_key_for_iterating == def_prom) {
+            return fonderInter;
         }
     }
+    return all_elements_.end();
+}
 
-    const_iterator begin() const { return secondListSaving.begin(); }
-
-    int size() const {
-        int ans = amountNumbers;
-        return ans;
+template <class KeyType, class ValueType, class Hash>
+const ValueType& HashMap<KeyType, ValueType, Hash>::at(
+    KeyType sample_key_for_iterating) const {
+    auto iterator_for_find_key = find(sample_key_for_iterating);
+    if (all_elements_.end() == iterator_for_find_key) {
+        throw out_of_range("");
     }
+    return iterator_for_find_key->second;
+}
 
-    ValueType &operator[](KeyType keyExample) {
-        auto Myit = find(keyExample);
-        if (iterator(secondListSaving.end()) == Myit) {
-            insert({keyExample, ValueType()});
-            Myit = find(keyExample);
+template <class KeyType, class ValueType, class Hash>
+ValueType& HashMap<KeyType, ValueType, Hash>::operator[](
+    KeyType sample_key_for_iterating) {
+    auto iterator_for_find_key = find(sample_key_for_iterating);
+    if (iterator(all_elements_.end()) == iterator_for_find_key) {
+        insert({sample_key_for_iterating, ValueType()});
+        iterator_for_find_key = find(sample_key_for_iterating);
+    }
+    return iterator_for_find_key->second;
+}
+
+template <class KeyType, class ValueType, class Hash>
+void HashMap<KeyType, ValueType, Hash>::erase(KeyType eraseElem) {
+    size_t Polynomial_hash =
+        function_hash_number_(eraseElem) % hash_table_size_quantity_elements_;
+    for (auto Myit = hash_table_[Polynomial_hash].begin();
+         Myit != hash_table_[Polynomial_hash].end(); ++Myit) {
+        KeyType def_prom = (*Myit)->first;
+        if (eraseElem == def_prom) {
+            all_elements_.erase(*Myit);
+            hash_table_[Polynomial_hash].erase(Myit);
+            num_hash_table_elements_--;
+            return;
         }
-        return Myit->second;
     }
+}
 
-    const ValueType &at(KeyType keyexample) const {
-        auto Myit = find(keyexample);
-        if (secondListSaving.end() == Myit) {
-            throw std::out_of_range("");
+template <class KeyType, class ValueType, class Hash>
+typename list<pair<const KeyType, ValueType>>::iterator
+HashMap<KeyType, ValueType, Hash>::find(KeyType sample_key_for_iterating) {
+    size_t hashFunc = function_hash_number_(sample_key_for_iterating) %
+                      hash_table_size_quantity_elements_;
+    for (auto& position_in_quant : hash_table_[hashFunc]) {
+        KeyType def_prom = position_in_quant->first;
+        if (sample_key_for_iterating == def_prom) {
+            return iterator(position_in_quant);
         }
-        return Myit->second;
     }
+    return iterator(all_elements_.end());
+}
 
-    const_iterator find(KeyType keyexample) const {
-        int hashFunc = functionHash(keyexample) % quantityElements;
-        for (auto &fonderInter : significantSaver[hashFunc]) {
-            KeyType def_prom = fonderInter->first;
-            if (keyexample == def_prom) {
-                return fonderInter;
-            }
-        }
-        auto ans = secondListSaving.end();
-        return ans;
+template <class KeyType, class ValueType, class Hash>
+HashMap<KeyType, ValueType, Hash>& HashMap<KeyType, ValueType, Hash>::operator=(
+    HashMap<KeyType, ValueType, Hash> const& element_position_in_object) {
+    auto iterator_for_iterating = this;
+    if (&element_position_in_object == iterator_for_iterating) {
+        return *iterator_for_iterating;
     }
+    for (auto& finderIter : all_elements_) {
+        size_t hashFunction = function_hash_number_(finderIter.first) %
+                              hash_table_size_quantity_elements_;
+        hash_table_[hashFunction].clear();
+    }
+    all_elements_.clear();
+    num_hash_table_elements_ = 0;
+    function_hash_number_ = element_position_in_object.hash_function();
+    hash_table_.resize(element_position_in_object.hash_table_size_quantity_elements_);
+    for (auto& foundIter : element_position_in_object) {
+        insert(foundIter);
+    }
+    return *iterator_for_iterating;
+}
 
-    void clear() {
-        for (auto &finderIter : secondListSaving) {
-            int hashFunction =
-                functionHash(finderIter.first) % quantityElements;
-            significantSaver[hashFunction].clear();
-        }
-        secondListSaving.clear();
-        amountNumbers = 0;
+template <class KeyType, class ValueType, class Hash>
+HashMap<KeyType, ValueType, Hash>::HashMap(Hash hasherObj)
+    : function_hash_number_(hasherObj) {
+    hash_table_size_quantity_elements_ = initialTableSize_;
+    hash_table_.resize(hash_table_size_quantity_elements_);
+}
+
+template <class KeyType, class ValueType, class Hash>
+HashMap<KeyType, ValueType, Hash>::HashMap(
+    initializer_list<pair<KeyType, ValueType>> list, Hash hasherObj)
+    : function_hash_number_(hasherObj) {
+    hash_table_size_quantity_elements_ = initialTableSize_;
+    hash_table_.resize(hash_table_size_quantity_elements_);
+    for (auto& pos_in_list : list) {
+        insert(pos_in_list);
     }
-};
+}
+
+template <class KeyType, class ValueType, class Hash>
+template <typename IteratorType>
+HashMap<KeyType, ValueType, Hash>::HashMap(IteratorType begin, IteratorType end,
+                                           Hash hasherObj)
+    : function_hash_number_(hasherObj) {
+    hash_table_size_quantity_elements_ = initialTableSize_;
+    hash_table_.resize(hash_table_size_quantity_elements_);
+    for (; begin != end; ++begin) {
+        insert(*begin);
+    }
+}
+
+template <class KeyType, class ValueType, class Hash>
+Hash HashMap<KeyType, ValueType, Hash>::hash_function() const {
+    return function_hash_number_;
+}
+
+template <class KeyType, class ValueType, class Hash>
+bool HashMap<KeyType, ValueType, Hash>::empty() const {
+    return !num_hash_table_elements_;
+}
+
+template <class KeyType, class ValueType, class Hash>
+typename list<pair<const KeyType, ValueType>>::iterator
+HashMap<KeyType, ValueType, Hash>::begin() {
+    return iterator(all_elements_.begin());
+}
+
+template <class KeyType, class ValueType, class Hash>
+typename list<pair<const KeyType, ValueType>>::const_iterator
+HashMap<KeyType, ValueType, Hash>::end() const {
+    return all_elements_.end();
+}
+
+template <class KeyType, class ValueType, class Hash>
+typename list<pair<const KeyType, ValueType>>::iterator
+HashMap<KeyType, ValueType, Hash>::end() {
+    return iterator(all_elements_.end());
+}
+
+template <class KeyType, class ValueType, class Hash>
+typename list<pair<const KeyType, ValueType>>::const_iterator
+HashMap<KeyType, ValueType, Hash>::begin() const {
+    return all_elements_.begin();
+}
+
+template <class KeyType, class ValueType, class Hash>
+size_t HashMap<KeyType, ValueType, Hash>::size() const {
+    return num_hash_table_elements_;
+}
