@@ -47,7 +47,7 @@ class HashMap {
 
     ValueType& operator[](const KeyType key);
 
-    const ValueType& at(const KeyType key) const;
+    const ValueType& at(const KeyType key) const;;
 
     const_iterator find(const KeyType key) const;
 
